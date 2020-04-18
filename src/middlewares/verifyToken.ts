@@ -10,7 +10,7 @@ let verifyToken = (req: Request, res: Response, next: NextFunction) => {
 
     // Formato del token: Authorization Bearer <access_token>
     const bearerHeader = req.headers['authorization'];
-    // const token = req.headers['x-access-token'];
+    // const token = req.headers['x-access-token']; // Ya no se usa esta cabecera. Solo de test
 
     // console.log('Middleware ' + bearerHeader);
     // Verifica el token.
