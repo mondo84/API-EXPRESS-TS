@@ -1,10 +1,11 @@
 /** 
  * Archivo de conexion con la base de datos.
  */
-import { createPool } from 'mysql2/promise';    // Conexion por promesa.
+import { createPool } from 'mysql2/promise';    // (DRIVER Para conexion con mysql) Devuelve promesa.
 
 let connect = async () => {
-
+    
+    
     const connectionObj = await createPool({    // Instancia de objeto con la conexion.
         host: 'localhost',
         user: 'root',
@@ -14,6 +15,7 @@ let connect = async () => {
     });
 
     return connectionObj;   // Retorna objeto con la conexion.
+    
 }
 
 // Exporta la funcion de conexion.
