@@ -8,20 +8,50 @@ import jwt from 'jsonwebtoken'; // Modulo que Genera y valida token.
 let getUsuario = (req: Request, res: Response) => {
     const token = req.params.token;
 
-    // ====== Se decodifica el token. Params: token y clave secreta.
+    // ====== Se decodifica el token. 
+    // @Params: token, clave secreta, callback funcion(error-verificando, datos-token: idUsu, creacionToken, expiracionToken)
     jwt.verify(token, 'MyclaveSecreta', async (err, authData) => {
         if(err) {
             return res.status(403).json({ msj: 'Forbidden' });  // Devuelve json.
         } else {
-            try {
-                const objConn = await objConexion();    // conexion a la BD.
-                const objDatos = await objConn.query('SELECT id, nombre, email FROM usuario');  // Consulta.
-                return res.status(200).json({ datos: objDatos[0], authData });
-            } catch (error) {   // Captura error.
-                return res.status(500).json({ msj: 'Algo anda mal' });  // Devuelve json.
-            }
+            const objConn = await objConexion();    // conexion a la BD.
+            await objConn.query('SELECT id, nombre, email FROM usuario')    // Consulta. Devuelve promesa.
+            .then((row)=>{
+                if(JSON.parse(JSON.stringify(row[0]))[0] == undefined){ 
+                    // console.log('No content');   // Debug.
+                    return res.status(204); // Devuelve un estado no content. no devuelve nada.
+                } else { 
+                    return res.status(200).json({ datos: row[0], authData, complete: true}); // Devuelve JSON con datos. 
+                }
+            })
+            .catch((erro)=>{    // Captura error de promesa.
+                return res.status(500).json({ msj: 'Algo anda mal', detail: erro.message });  // Devuelve json.
+            });  // Consulta.
         }
     });
+}
+
+let getUsuarioById = async (req: Request, res: Response) => {
+    // console.log(req.params);     // Recibe id de busqueda por parametro.
+    const idBusqueda = req.params.idUsuParam;
+
+    const objConn = await objConexion();    // Conexion con la DB.
+    objConn.query('SELECT id, nombre, email FROM usuario WHERE id = ?', [idBusqueda])
+    .then( (row) => {
+        // console.log(  JSON.parse(JSON.stringify(row[0]))[0].nombre );    // Debug.
+        // console.log(JSON.parse(JSON.stringify(row[0]))[0]);
+
+        if(JSON.parse(JSON.stringify(row[0]))[0] == undefined){ 
+            // console.log('No content');   // Debug.
+            return res.status(204); // Devuelve un estado no content. no devuelve nada.
+        } else { 
+            return res.status(200).json({ datos: row[0], complete: true}); // Devuelve JSON con datos. 
+        }
+    } )
+    .catch( (err) => {
+        // console.error(`Algo anda mal: ${err.message}`);  // Debug.
+        return res.status(200).json({ msg: err.message, complete: false}); // // Devuelve JSON con error..
+    } );
 }
 
 let createUsuario = async (req: Request, res: Response) => {
@@ -87,4 +117,4 @@ let sigIn = async (req: Request, res: Response) => {
     }
 }
 
-export { createUsuario, sigIn, getUsuario };
+export { createUsuario, sigIn, getUsuario, getUsuarioById };
