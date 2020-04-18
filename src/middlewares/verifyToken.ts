@@ -1,5 +1,6 @@
 /** 
  * Middleware que verifica el token capturado.
+ * Nota: El token se genera con el ID del usuario autenticado.
  */
 
 import { Request, Response, NextFunction } from 'express'
@@ -11,17 +12,15 @@ let verifyToken = (req: Request, res: Response, next: NextFunction) => {
     const bearerHeader = req.headers['authorization'];
     // const token = req.headers['x-access-token'];
 
-    console.log('Middleware ' + bearerHeader);
+    // console.log('Middleware ' + bearerHeader);
     // Verifica el token.
     if ( typeof bearerHeader !== 'undefined'){
-        // Creando el espacio en el token.
-        const bearer = bearerHeader.split(' ');
-
-        const bearerToken = bearer[1];  // Obtengo el token en el array.
+        const bearer = bearerHeader.split(' '); // Creando el espacio en el token. Devuelve una array. spacio[0], token[1]
+        const bearerToken = bearer[1];          // Obtengo el token en el array.
 
         req.params.token = bearerToken;
 
-        console.log(bearerToken);
+        // console.log(bearerToken);
         next();
     } else {
         // req.params.token = "parametro guardado en el require";
@@ -34,6 +33,6 @@ let verifyToken = (req: Request, res: Response, next: NextFunction) => {
 
 export default verifyToken;
 
-// VALIDAR EL TOKEN EN ESTE MIDDLEWARE PARA QUE VALIDE EL TOKEN
-// PARA TODAS LAS PETICIONES. BORRAR EL metodo verify() del metodo
+// VALIDAR EL TOKEN EN ESTE MIDDLEWARE. PARA EVITAR VALIDAR EL TOKEN
+// PARA TODAS LAS PETICIONES DE LA APP. BORRAR EL metodo verify() del metodo
 // getUsuario.

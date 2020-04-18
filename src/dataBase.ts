@@ -15,7 +15,6 @@ let connect = async () => {
     });
 
     return connectionObj;   // Retorna objeto con la conexion.
-    
 }
 
 // Exporta la funcion de conexion.
