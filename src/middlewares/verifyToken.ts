@@ -30,7 +30,7 @@ let verifyToken = (req: Request, res: Response, next: NextFunction) => {
         
     } else {
         // res.sendStatus(403); // Forbidden.
-        res.status(403).json({ msj: 'Forbidden' });
+        res.status(403).json({ msj: 'Forbidden' }); // Prohibido
     }
 }
 
