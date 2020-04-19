@@ -5,79 +5,83 @@ import objBcrypt from 'bcryptjs'
 import jwt from 'jsonwebtoken'; // Modulo que Genera y valida token.
 
 // ========= Registro de usuario.
-let getUsuario = (req: Request, res: Response) => {
-    const token = req.params.token;
-
-    // ====== Se decodifica el token. 
-    // @Params: token, clave secreta, callback funcion(error-verificando, datos-token: idUsu, creacionToken, expiracionToken)
-    jwt.verify(token, 'MyclaveSecreta', async (err, authData) => {
-        if(err) {
-            return res.status(403).json({ msj: 'Forbidden' });  // Devuelve json.
+let getUsuario = async (req: Request, res: Response) => {
+    const dataToken = JSON.parse(req.params.datosToken);    // Casting de string a JSON.
+    
+    const objConn = await objConexion();    // conexion a la BD.
+    await objConn.query('SELECT id, nombre, email FROM usuario') // Consulta. Devuelve promesa.
+    .then((row)=>{
+        // console.log(  JSON.parse(JSON.stringify(row[0]))[0].nombre ); // Debug.
+        if(JSON.parse(JSON.stringify(row[0]))[0] == undefined){ 
+            return res.status(204).json({ msg: 'no content' }); // Devuelve un estado no content. no devuelve nada.
         } else {
-            const objConn = await objConexion();    // conexion a la BD.
-            await objConn.query('SELECT id, nombre, email FROM usuario')    // Consulta. Devuelve promesa.
-            .then((row)=>{
-                if(JSON.parse(JSON.stringify(row[0]))[0] == undefined){ 
-                    // console.log('No content');   // Debug.
-                    return res.status(204); // Devuelve un estado no content. no devuelve nada.
-                } else { 
-                    return res.status(200).json({ datos: row[0], authData, complete: true}); // Devuelve JSON con datos. 
-                }
-            })
-            .catch((erro)=>{    // Captura error de promesa.
-                return res.status(500).json({ msj: 'Algo anda mal', detail: erro.message });  // Devuelve json.
-            });  // Consulta.
+            // Devuelve JSON con datos, e informacion del token.
+            return res.status(200).json({ datos: row[0], complete: true, datosToken: dataToken}); 
         }
+    })
+    .catch((erro)=>{    // Captura error de promesa.
+        return res.status(500).json({ msj: 'Algo anda mal', complete: false }); // Devuelve JSON con mensaje.
     });
 }
 
 let getUsuarioById = async (req: Request, res: Response) => {
-    // console.log(req.params);     // Recibe id de busqueda por parametro.
+    // console.log(req.params);     // Recibe id de busqueda por parametro. // Debug.
     const idBusqueda = req.params.idUsuParam;
+    const dataToken =  JSON.parse(req.params.datosToken);   // Casting de String a JSON.
 
     const objConn = await objConexion();    // Conexion con la DB.
-    objConn.query('SELECT id, nombre, email FROM usuario WHERE id = ?', [idBusqueda])
+    objConn.query('SELECT id, nombre, email FROM usuario WHERE id = ?', [idBusqueda]) // Consulta. Devuelve promesa.
     .then( (row) => {
-        // console.log(  JSON.parse(JSON.stringify(row[0]))[0].nombre );    // Debug.
-        // console.log(JSON.parse(JSON.stringify(row[0]))[0]);
-
-        if(JSON.parse(JSON.stringify(row[0]))[0] == undefined){ 
-            // console.log('No content');   // Debug.
-            return res.status(204); // Devuelve un estado no content. no devuelve nada.
+        // console.log(  JSON.parse(JSON.stringify(row[0]))[0].nombre ); // Debug.
+        if(JSON.parse(JSON.stringify(row[0]))[0] == undefined){ // Valida datos de registro.
+            return res.status(204).json({ msg: 'no content' }); // Devuelve un estado no content. no devuelve nada.
         } else { 
-            return res.status(200).json({ datos: row[0], complete: true}); // Devuelve JSON con datos. 
+            // Devuelve JSON con datos, e informacion del token.
+            return res.status(200).json({ datos: row[0], complete: true, datosToken: dataToken }); 
         }
     } )
     .catch( (err) => {
-        // console.error(`Algo anda mal: ${err.message}`);  // Debug.
-        return res.status(200).json({ msg: err.message, complete: false}); // // Devuelve JSON con error..
+        return res.status(500).json({ msg: 'Algo anda mal', complete: false }); // Devuelve JSON con mensaje.
     } );
 }
 
 let createUsuario = async (req: Request, res: Response) => {
-        const objDatos: usuarioI = req.body;        // Se recuperan los datos del request.
-        const salt = await objBcrypt.genSalt(10);   // Se aplica un hash 10 veces y se guarda.
+    const objDatos: usuarioI = req.body;        // Se recuperan los datos del request.
 
-        objBcrypt.hash(objDatos.password, salt)     // Se aplica hash al password. 
-        .then( async (result) => {
-            const obj = {   nombre: objDatos.nombre.toLowerCase(), 
-                            email: objDatos.email.toLowerCase(), 
-                            password: result};
+    validaCorreo(objDatos.email.toLowerCase())  // Verifica existencia del correo
+    .then(  async (resultCont) => {
+        // console.log( JSON.parse(JSON.stringify(resultCont[0]))[0].cuenta );  // Debug
+        const countEmail = JSON.parse(JSON.stringify(resultCont[0]))[0].cuenta
+        switch(countEmail){
+            case 0: // Email disponible.
+                const salt = await objBcrypt.genSalt(10);   // Se aplica un hash 10 veces y se guarda.
 
-            const objConn = await objConexion();
-            await objConn.query('INSERT INTO usuario SET ?', [obj]);
+                objBcrypt.hash(objDatos.password, salt)     // Se aplica hash al password. 
+                .then( async (result) => {
+                    const obj = {   nombre: objDatos.nombre.toLowerCase(), 
+                                    email: objDatos.email.toLowerCase(), 
+                                    password: result};
 
-            return res.status(200).json({
-                status: 200,
-                complete: true
-            });
-        }).catch( error => {
-            return res.status(500).json({
-                status: 500,
-                complete: false,
-                msj: error.message
-            });
-        });
+                    const objConn = await objConexion();
+                    await objConn.query('INSERT INTO usuario SET ?', [obj])
+                    .then( async (rows) => {
+                        const affectedRows = await JSON.parse(JSON.stringify(rows[0])).affectedRows;
+                        const idInsert     = await JSON.parse(JSON.stringify(rows[0])).insertId;
+                        return res.status(200).json({ idInsert, affectedRows, complete: true });
+                    })
+                    .catch( async (err) => {
+                        return res.status(500).json({ msg: 'Algo anda mal', complete: false });
+                    });
+                }).catch( error => { return res.status(500).json({ msg: 'Algo anda mal', complete: false }); });
+
+                break;
+            default:    // Duplicidad de email.
+                return res.status(500).json({ msg: 'Algo anda mal', complete: false });
+        }
+    })
+    .catch((err) => {   // Captura error de validacion de correo.
+        console.log(err.message);   // Retorna error.
+    });
 }
 
 let sigIn = async (req: Request, res: Response) => {
@@ -91,7 +95,7 @@ let sigIn = async (req: Request, res: Response) => {
 
     switch(numEmail) {  // Valida si existe el email.
         case 0:
-           return res.status(200).json({ msj: 'usuario no existe', status: 200 });
+           return res.status(200).json({ msg: 'usuario no existe', status: 200 });
         case 1:
 
             const rows = await objConn.query('SELECT id, password FROM usuario WHERE email = ?', [datos.email]);  // Busca por email.
@@ -115,6 +119,14 @@ let sigIn = async (req: Request, res: Response) => {
         default:    // El correo no es unico.
             return res.status(500).json({ msj: 'Algo anda mal', status: 500 })
     }
+}
+
+let validaCorreo = async ( argEmail: string ): Promise<any> => {
+    
+    const objConn = await objConexion();    // obeto de conexion
+    // // Busca por email.
+    const objResult = await objConn.query('SELECT COUNT(*) AS cuenta FROM usuario WHERE email = ?', [argEmail]);
+    return objResult;
 }
 
 export { createUsuario, sigIn, getUsuario, getUsuarioById };
