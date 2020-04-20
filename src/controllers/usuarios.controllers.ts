@@ -4,7 +4,7 @@ import usuarioI from './../interfaces/usuario.interface';
 import objBcrypt from 'bcryptjs'
 import jwt from 'jsonwebtoken'; // Modulo que Genera y valida token.
 
-// ========= Registro de usuario.
+// ========= Motodos del controlador usuario ========= //
 let getUsuario = async (req: Request, res: Response) => {
     const dataToken = JSON.parse(req.params.datosToken);    // Casting de string a JSON.
     
@@ -122,6 +122,35 @@ let sigIn = async (req: Request, res: Response) => {
     });
 }
 
+let updateUsuario = async ( req: Request, res: Response ) => {
+    const idUsu = req.params.idUsuParam; // Recupera id por parametro.
+    const objDatos: usuarioI = req.body; // Se recuperan los datos del request.
+    // console.log(objDatos);
+
+    const objConn = await objConexion();    // objeto de conexion.
+    await objConn.query('UPDATE usuario SET ? WHERE id = ?', [objDatos, idUsu]).then( (resultSet) => {  // Ejecuta promesa
+        res.status(200).json({  // Devuelve JSON
+            affectedRows: JSON.parse(JSON.stringify(resultSet[0])).affectedRows,
+            info: JSON.parse(JSON.stringify(resultSet[0])).info,
+            changedRows: JSON.parse(JSON.stringify(resultSet[0])).changedRows,
+            complete: true });
+    })
+    .catch( (err) => { res.status(500).json({ error: err.message  }) });
+}
+
+let deleteUsuario = async ( req: Request, res: Response ) => {
+    const idUsu = req.params.idUsuParam;    // Captura id por parametro.
+    const objConn = await objConexion();    // objeto de conexion.
+    await objConn.query('DELETE FROM usuario WHERE id = ?', [idUsu]).then((resultSet) => {  // Devuelve promesa
+        res.status(200).json({  // Retorna JSON.
+            affectedRows: JSON.parse(JSON.stringify(resultSet[0])).affectedRows, 
+            complete: true });
+    })
+    .catch( (err) => {
+        res.status(500).json({ error: err.message, complete: false })
+    });
+}
+
 let validaCorreo = async ( argEmail: string ): Promise<any> => {
     const objConn = await objConexion();    // obeto de conexion
     // // Busca por email.
@@ -129,4 +158,4 @@ let validaCorreo = async ( argEmail: string ): Promise<any> => {
     return objResult;
 }
 
-export { createUsuario, sigIn, getUsuario, getUsuarioById };
+export { createUsuario, sigIn, getUsuario, getUsuarioById, updateUsuario, deleteUsuario };
