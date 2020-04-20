@@ -48,8 +48,8 @@ let getUsuarioById = async (req: Request, res: Response) => {
 let createUsuario = async (req: Request, res: Response) => {
     const objDatos: usuarioI = req.body;        // Se recuperan los datos del request.
 
-    validaCorreo(objDatos.email.toLowerCase())  // Verifica existencia del correo
-    .then(  async (resultCont) => {
+    // Verifica existencia del correo
+    validaCorreo(objDatos.email.toLowerCase()).then(  async (resultCont) => {
         // console.log( JSON.parse(JSON.stringify(resultCont[0]))[0].cuenta );  // Debug
         const countEmail = JSON.parse(JSON.stringify(resultCont[0]))[0].cuenta
         switch(countEmail){
@@ -87,42 +87,42 @@ let createUsuario = async (req: Request, res: Response) => {
 let sigIn = async (req: Request, res: Response) => {
     const datos: usuarioI = req.body;       // Recibo los datos del front.
     const objConn = await objConexion();    // objeto de conexion.
+    
+    validaCorreo(datos.email.toLowerCase()).then( async result => {   // Metodo que valida el correo. Devuelve una promesa.
+        const numEmail = result[0][0].cuenta;   // Captura numero de coincidencias.
+        switch(numEmail) {  // Valida si existe el email.
+            case 0:
+            return res.status(200).json({ msg: 'usuario no existe', status: 200 });
+            case 1:
 
-    const rows = await objConn.query('SELECT COUNT(*) AS cuenta FROM usuario WHERE email = ?', [datos.email]);  // Busca por email.
-    const result = JSON.parse(JSON.stringify(rows));    // parsea de objeto a string, y de string a json.
+                const rows = await objConn.query('SELECT id, password FROM usuario WHERE email = ?', [datos.email]);  // Busca por email.
+                const row = JSON.parse(JSON.stringify(rows[0]));    // parsea de objeto a string, y de string a json.
 
-    const numEmail = result[0][0].cuenta;   // Captura numero de coincidencias.
+                // Compara el password capturado, con el de la base de datos. Retorna boolean en una promesa.
+                objBcrypt.compare(datos.password, row[0].password)
+                .then( (isValid) => {
 
-    switch(numEmail) {  // Valida si existe el email.
-        case 0:
-           return res.status(200).json({ msg: 'usuario no existe', status: 200 });
-        case 1:
+                    if(isValid){    // Si la clave es valida.
+                        // Crea el token con el id del usuario autenticado, la clave secreta y 24 horas de validez.
+                        const jsonToken = jwt.sign( { idUser : row[0].id }, 'MyclaveSecreta', { expiresIn: 60 * 60 * 24 });
+                        res.status(200).json({ auth: true, token: jsonToken }); // Respuesta del servidor. Devuelve un json con el token.
 
-            const rows = await objConn.query('SELECT id, password FROM usuario WHERE email = ?', [datos.email]);  // Busca por email.
-            const row = JSON.parse(JSON.stringify(rows[0]));    // parsea de objeto a string, y de string a json.
+                    } else {    // Si la clave no es valida.
+                        res.status(200).json({ auth: false, token: null }); // Devuelve json con token null y auth false.
+                    }
+                }).catch ( (err) => { return res.status(500).json({ msj: err.message, status: 500 }); });   // Captura error.
 
-            // Compara el password capturado, con el de la base de datos. Retorna boolean en una promesa.
-            objBcrypt.compare(datos.password, row[0].password)
-            .then( (isValid) => {
-
-                if(isValid){    // Si la clave es valida.
-                    // Crea el token con el id del usuario autenticado, la clave secreta y 24 horas de validez.
-                    const jsonToken = jwt.sign( { idUser : row[0].id }, 'MyclaveSecreta', { expiresIn: 60 * 60 * 24 });
-                    res.status(200).json({ auth: true, token: jsonToken }); // Respuesta del servidor. Devuelve un json con el token.
-
-                } else {    // Si la clave no es valida.
-                    res.status(200).json({ auth: false, token: null }); // Devuelve json con token null y auth false.
-                }
-            }).catch ( (err) => { return res.status(500).json({ msj: err.message, status: 500 }); });   // Captura error.
-
-            break;
-        default:    // El correo no es unico.
-            return res.status(500).json({ msj: 'Algo anda mal', status: 500 })
-    }
+                break;
+            default:    // El correo no es unico.
+                return res.status(500).json({ msj: 'Algo anda mal', status: 500 })
+        }
+    })
+    .catch((err) => {  
+        res.status(500).json({ message: err.message, code: err.code, errno: err.errno })
+    });
 }
 
 let validaCorreo = async ( argEmail: string ): Promise<any> => {
-    
     const objConn = await objConexion();    // obeto de conexion
     // // Busca por email.
     const objResult = await objConn.query('SELECT COUNT(*) AS cuenta FROM usuario WHERE email = ?', [argEmail]);
