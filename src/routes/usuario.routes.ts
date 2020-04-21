@@ -14,8 +14,8 @@ objRutasUsuario.route('/').get(verifyToken, getUsuario);    // Forma larga con m
 
 objRutasUsuario.route('/:idUsuParam(\\d+)').get(verifyToken, getUsuarioById);   // Ruta get con patron de solo numeros enteros
 objRutasUsuario.route('/').post(verifyToken,createUsuario);                     // Ruta post. Crea usuario.
-objRutasUsuario.route('/sigin').post(sigIn);        // Ruta post. Autenticacion.
-objRutasUsuario.route('/:idUsuParam(\\d+)').put(updateUsuario);      // Ruta modificacionde usuario.
-objRutasUsuario.route('/:idUsuParam(\\d+)').delete(deleteUsuario);   // Ruta borra usuario.
+objRutasUsuario.route('/sigin').post(sigIn);                                    // Ruta post. Autenticacion.
+objRutasUsuario.route('/:idUsuParam(\\d+)').put(verifyToken, updateUsuario);    // Ruta modificacionde usuario.
+objRutasUsuario.route('/:idUsuParam(\\d+)').delete(verifyToken, deleteUsuario); // Ruta borra usuario.
 
 export default objRutasUsuario;

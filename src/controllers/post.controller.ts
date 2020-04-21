@@ -1,29 +1,19 @@
 import { Request, Response } from 'express';
 import  objConnect  from './../dataBase';   // Importa objeto con la conexion.
-import objIPost from './../interfaces/post.interface';
 import postI from './../interfaces/post.interface';
 
 // Metodo que retorna una promesa del tipo response.
-let getPosts = async (req: Request, res: Response): Promise<Response> => {
+let getPosts = async (req: Request, res: Response) => {
 
-    try {
-        const conn = await objConnect();    // Objeto con la conexion.
-        const posts = await conn.query('SELECT * FROM posts');  //Query SELECT.
-
+    const conn = await objConnect();    // Objeto con la conexion.
+    await conn.query('SELECT * FROM posts').then( (resultSet)=> { //Query SELECT.
         // Devuelve JSON con datos.
-        return res.status(200).json({
-            datos: posts[0],
-            status: 200,
-            complete: 'ok'
-        });
-    } catch (error) {
-        // Devuelve JSON con error y codigo de estado.
-        return res.status(500).json({
-            status: 500,
-            msj: error.message
-        });
-    }
-    
+        return res.status(200).json({ datos: resultSet[0], complete: true });
+    })
+    .catch((err)=>{
+        // Devuele un JSON con error y codigo de estado.
+        return res.status(500).json({ error: err.message, complete: false });
+    });
 }
 
 let getPostByid = async ( req: Request, res: Response ): Promise<Response> => {
@@ -68,7 +58,7 @@ let deleltePost = async (req: Request, res: Response) => {
 }
 
 let createPost = async (req: Request, res: Response): Promise<Response> => {
-    const objJson: objIPost = req.body;
+    const objJson: postI = req.body;
 
     try {
         const conn = await objConnect();                        // Objeto con la conexion.

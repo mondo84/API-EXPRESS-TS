@@ -6,17 +6,18 @@ import morgan from 'morgan';                    // Importacion por default
 
 // === Importacion por default de los Modulos de rutas.
 import objRutaIndex from './routes/index.routes';
-import objRutaPost from './routes/posts.routes';
+import objRutaPosts from './routes/posts.routes';
 import objRutaCaso from './routes/casos.routes'
 import objRutaUsuario from './routes/usuario.routes';
 
 class App {
 
     private app: Application;   // Variable tipo Interface Application de express().
-
+    
     // Ejecuta el servidor. EL puerto es opcional. numero / string
     constructor(private argPort?: number | string) {
         this.app = express();   // Instancia de express.
+
         this.settings();        // Ejecuta el metodo que setea la propiedad port.
         this.middleware();      // Ejecuta middleware.
         this.routes();          // Metodo que ejecuta el modulo de rutas.
@@ -39,7 +40,7 @@ class App {
     // Metodo que llama el modulo de rutas.
     routes(){
        this.app.use(objRutaIndex); 
-       this.app.use('/posts', objRutaPost);         // Rutas para los posts.
+       this.app.use('/posts', objRutaPosts ); // Rutas para los posts.
        this.app.use('/casos', objRutaCaso);         // Rutas para los casos.
        this.app.use('/usuario', objRutaUsuario);    // Rutas para los usuarios.
     }

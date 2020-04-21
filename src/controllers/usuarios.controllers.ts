@@ -159,3 +159,8 @@ let validaCorreo = async ( argEmail: string ): Promise<any> => {
 }
 
 export { createUsuario, sigIn, getUsuario, getUsuarioById, updateUsuario, deleteUsuario };
+
+/**
+ * NOTA: Encapsular codigo en una clase para mejor 
+ * arquitectura de codigo.
+*/
