@@ -1,9 +1,9 @@
-/** 
+/**
  * Calse:
  * Modulo de rutas de los posts (publicaciones).
  * */
 import { Router } from 'express';   // Importa Modulo de rutas de express.
-import { getPosts, getPostByid, createPost, 
+import { getPosts, getPostByid, createPost,
          deleltePost, updatePost} from './../controllers/post.controller';    // Posts Controlador.
 import verifyToken from '../middlewares/verifyToken';   // Importa middleware verifica token.
 

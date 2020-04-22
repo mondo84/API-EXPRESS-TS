@@ -1,4 +1,4 @@
-/** 
+/**
  * Middleware que verifica el token capturado.
  * Nota: El token se genera con el ID del usuario autenticado.
  */
@@ -27,7 +27,7 @@ let verifyToken = (req: Request, res: Response, next: NextFunction) => {
                 next(); // Da acceso a la funcion siguiente.
             }
         });
-        
+
     } else {
         // res.sendStatus(403); // Forbidden.
         res.status(403).json({ msj: 'Forbidden' }); // Prohibido

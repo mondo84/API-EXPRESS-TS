@@ -3,20 +3,21 @@ import objConexion from './../dataBase'
 import usuarioI from './../interfaces/usuario.interface';
 import objBcrypt from 'bcryptjs'
 import jwt from 'jsonwebtoken'; // Modulo que Genera y valida token.
+// import cors from 'cors';  // CORS Middleware
 
 // ========= Motodos del controlador usuario ========= //
 let getUsuario = async (req: Request, res: Response) => {
     const dataToken = JSON.parse(req.params.datosToken);    // Casting de string a JSON.
-    
+
     const objConn = await objConexion();    // conexion a la BD.
     await objConn.query('SELECT id, nombre, email FROM usuario') // Consulta. Devuelve promesa.
     .then((row)=>{
         // console.log(  JSON.parse(JSON.stringify(row[0]))[0].nombre ); // Debug.
-        if(JSON.parse(JSON.stringify(row[0]))[0] == undefined){ 
+        if(JSON.parse(JSON.stringify(row[0]))[0] == undefined){
             return res.status(204).json({ msg: 'no content' }); // Devuelve un estado no content. no devuelve nada.
         } else {
             // Devuelve JSON con datos, e informacion del token.
-            return res.status(200).json({ datos: row[0], complete: true, datosToken: dataToken}); 
+            return res.status(200).json({ datos: row[0], complete: true, datosToken: dataToken});
         }
     })
     .catch((erro)=>{    // Captura error de promesa.
@@ -35,9 +36,9 @@ let getUsuarioById = async (req: Request, res: Response) => {
         // console.log(  JSON.parse(JSON.stringify(row[0]))[0].nombre ); // Debug.
         if(JSON.parse(JSON.stringify(row[0]))[0] == undefined){ // Valida datos de registro.
             return res.status(204).json({ msg: 'no content' }); // Devuelve un estado no content. no devuelve nada.
-        } else { 
+        } else {
             // Devuelve JSON con datos, e informacion del token.
-            return res.status(200).json({ datos: row[0], complete: true, datosToken: dataToken }); 
+            return res.status(200).json({ datos: row[0], complete: true, datosToken: dataToken });
         }
     } )
     .catch( (err) => {
@@ -56,10 +57,10 @@ let createUsuario = async (req: Request, res: Response) => {
             case 0: // Email disponible.
                 const salt = await objBcrypt.genSalt(10);   // Se aplica un hash 10 veces y se guarda.
 
-                objBcrypt.hash(objDatos.password, salt)     // Se aplica hash al password. 
+                objBcrypt.hash(objDatos.password, salt)     // Se aplica hash al password.
                 .then( async (result) => {
-                    const obj = {   nombre: objDatos.nombre.toLowerCase(), 
-                                    email: objDatos.email.toLowerCase(), 
+                    const obj = {   nombre: objDatos.nombre.toLowerCase(),
+                                    email: objDatos.email.toLowerCase(),
                                     password: result};
 
                     const objConn = await objConexion();
@@ -85,14 +86,16 @@ let createUsuario = async (req: Request, res: Response) => {
 }
 
 let sigIn = async (req: Request, res: Response) => {
+    // const originObj = req.headers['origin']
+    //console.log(originObj);
     const datos: usuarioI = req.body;       // Recibo los datos del front.
     const objConn = await objConexion();    // objeto de conexion.
-    
+
     validaCorreo(datos.email.toLowerCase()).then( async result => {   // Metodo que valida el correo. Devuelve una promesa.
         const numEmail = result[0][0].cuenta;   // Captura numero de coincidencias.
         switch(numEmail) {  // Valida si existe el email.
             case 0:
-            return res.status(200).json({ msg: 'usuario no existe', status: 200 });
+            return res.status(200).json({ auth: false, msg: 'usuario no existe' });
             case 1:
 
                 const rows = await objConn.query('SELECT id, password FROM usuario WHERE email = ?', [datos.email]);  // Busca por email.
@@ -117,7 +120,7 @@ let sigIn = async (req: Request, res: Response) => {
                 return res.status(500).json({ msj: 'Algo anda mal', status: 500 })
         }
     })
-    .catch((err) => {  
+    .catch((err) => {
         res.status(500).json({ message: err.message, code: err.code, errno: err.errno })
     });
 }
@@ -143,7 +146,7 @@ let deleteUsuario = async ( req: Request, res: Response ) => {
     const objConn = await objConexion();    // objeto de conexion.
     await objConn.query('DELETE FROM usuario WHERE id = ?', [idUsu]).then((resultSet) => {  // Devuelve promesa
         res.status(200).json({  // Retorna JSON.
-            affectedRows: JSON.parse(JSON.stringify(resultSet[0])).affectedRows, 
+            affectedRows: JSON.parse(JSON.stringify(resultSet[0])).affectedRows,
             complete: true });
     })
     .catch( (err) => {
@@ -161,6 +164,6 @@ let validaCorreo = async ( argEmail: string ): Promise<any> => {
 export { createUsuario, sigIn, getUsuario, getUsuarioById, updateUsuario, deleteUsuario };
 
 /**
- * NOTA: Encapsular codigo en una clase para mejor 
+ * NOTA: Encapsular codigo en una clase para mejor
  * arquitectura de codigo.
 */
